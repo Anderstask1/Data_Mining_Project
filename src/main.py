@@ -4,6 +4,8 @@ from sklearn import metrics
 from time import time
 import numpy as np
 import collections
+import matplotlib.pyplot as plt
+from scipy.spatial.distance import cdist
 
 def load_data(path):
 	'''
@@ -78,28 +80,6 @@ def applymap(transaction, map_):
 
 
 
-
-
-
-
-clusters = 15
-
-def bench_k_means(estimator, name, data):
-	t0 = time()
-	estimator.fit(data)
-	print('%-9s\t%.2fs\t%i\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f'
-          % (name, (time() - t0), estimator.inertia_,
-             metrics.homogeneity_score(labels, estimator.labels_),
-             metrics.completeness_score(labels, estimator.labels_),
-             metrics.v_measure_score(labels, estimator.labels_),
-             metrics.adjusted_rand_score(labels, estimator.labels_),
-             metrics.adjusted_mutual_info_score(labels,  estimator.labels_),
-             metrics.silhouette_score(data, estimator.labels_,
-                                      metric='euclidean',
-                                      sample_size=sample_size)))
-
-
-
 if __name__=='__main__':
 	data_path = '../datasets/groceries.csv'
 	transactions, items = load_data(data_path)
@@ -111,7 +91,6 @@ if __name__=='__main__':
 
 	n_samples = 9835
 	n_features = 169
-	
 
 	#create boolean matrix
 	data_matrix = np.zeros((n_samples,n_features))
@@ -122,9 +101,42 @@ if __name__=='__main__':
 	#bench_k_means(KMeans(init='k-means++', n_clusters=clusters, n_init=10), name="k-means++", data=data_matrix)
 	#bench_k_means(KMeans(init='random', n_clusters=clusters, n_init=10), name="random", data=data_matrix)
 
+	#elbow methold for optimal K.
+	distortions = []
+	inertias = []
+	mapping1 = {}
+	mapping2 = {}
+	K = range(1,20)
+
+
+	for k in K:
+		#Building and fitting the model
+		kmeanModel = KMeans(n_clusters=k).fit(data_matrix)
+		kmeanModel.fit(data_matrix)
+
+		distortions.append(sum(np.min(cdist(data_matrix, kmeanModel.cluster_centers_,
+		                  'euclidean'),axis=1)) / data_matrix.shape[0])
+		inertias.append(kmeanModel.inertia_)
+
+		mapping1[k] = sum(np.min(cdist(data_matrix, kmeanModel.cluster_centers_,
+		             'euclidean'),axis=1)) / data_matrix.shape[0]
+		mapping2[k] = kmeanModel.inertia_
+
+plt.plot(K, distortions, 'bx-')
+plt.xlabel('Values of K')
+plt.ylabel('Distortion') 
+plt.title('The Elbow Method using Distortion')
+plt.show()
+
+plt.plot(K, inertias, 'bx-') 
+plt.xlabel('Values of K') 
+plt.ylabel('Inertia') 
+plt.title('The Elbow Method using Inertia') 
+plt.show()
+
+'''
 	clusterer = KMeans(init='k-means++', n_clusters=clusters, n_init=10)
 	clusterer.fit(data_matrix)          #do clustering
-
 	results = clusterer.predict(data_matrix)
 
 
@@ -136,7 +148,7 @@ if __name__=='__main__':
 	counter = collections.Counter(results)
 
 	print(counter)
-
+	'''
 
 
 
