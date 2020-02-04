@@ -3,7 +3,6 @@ import csv
 from difflib import SequenceMatcher
 
 
-
 #read data from recipes
 
 filename = "../datasets/recipe-ingredients-dataset/train.json"
@@ -57,7 +56,7 @@ items_without_matches = []
 for trans_item in transactions_items:
     match_flag = False
     for recipe_item in recipes_items:
-        if similar(trans_item,recipe_item) >0.8:
+        if similar(trans_item,recipe_item) >0.75:
             if match_flag == False:
                 match_count += 1 #count a match once only
             match_flag = True
@@ -68,3 +67,4 @@ for trans_item in transactions_items:
 print("matches found: ", match_count)
 
 print("items with no matches (",len(items_without_matches),"): ", items_without_matches)
+
