@@ -64,6 +64,7 @@ def create_grocery_map(items, ingredients, threshold, item_map):
     similarities = {}
 
     for ingredient in ingredients:
+        grocery_map[ingredient] = -1
         for item in items:
             similarities[ingredient] = - 1
             similarity = SequenceMatcher(None, item, ingredient).ratio()

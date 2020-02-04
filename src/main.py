@@ -3,25 +3,27 @@ from sklearn.cluster import KMeans
 from sklearn import metrics	
 from time import time
 import numpy as np
+import pickle
 
 import matplotlib.pyplot as plt
 
 
-import data_analysis
+from data_analysis import match_analysis
 import data_load
 from mapping import create_item_map, applymap, create_grocery_map
 
 
 N_SAMPLES = 9835
+N_RECIPES = 39774
 N_FEATURES = 169
-SIMILARITY_THRESHOLD = 0.75
+SIMILARITY_THRESHOLD = 0.7
 DATA_PATH_ITEMS = '../datasets/groceries.csv'
 DATA_PATH_RECIPES = '../datasets/recipe-ingredients-dataset/train.json'
 
 
 if __name__=='__main__':
 
-# Load data, extract unique elements
+	# Load data, extract unique elements
 	transactions, items = data_load.load_data(DATA_PATH_ITEMS)
 	recipes, ingredients = data_load.load_json(DATA_PATH_RECIPES)
 
@@ -34,10 +36,13 @@ if __name__=='__main__':
 	transactions_mapped = [applymap(transaction, item_map) for transaction in transactions]
 	print("mapped transactions")
 
-	groceries_map = create_grocery_map(items, ingredients, SIMILARITY_THRESHOLD, item_map)
+	#groceries_map = create_grocery_map(items, ingredients, SIMILARITY_THRESHOLD, item_map)
 
-	for k in groceries_map.keys():
-		print(groceries_map[k])
+	#with open('groceries_map.pickle', 'wb') as handle:
+	#	pickle.dump(groceries_map, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+	with open('groceries_map.pickle', 'rb') as handle:
+		groceries_map = pickle.load(handle)
 
 	print("1")
 	one_ingredientset = [[ingredientset] for ingredientset in ingredients]
@@ -47,14 +52,20 @@ if __name__=='__main__':
 	recipes_mapped = [applymap(recipe['ingredients'], groceries_map) for recipe in recipes]
 	print("mapped recipes")
 
-#create boolean matrix
-	data_matrix = np.zeros((N_SAMPLES,N_FEATURES))
+	#create boolean transaction matrix
+	transactions_matrix = np.zeros((N_SAMPLES,N_FEATURES))
 	for sample in range(len(transactions_mapped)):
 		for item in range(len(transactions_mapped[sample])):
-			data_matrix[sample][item] = 1
+			transactions_matrix[sample][item] = 1
 
-	#bench_k_means(KMeans(init='k-means++', n_clusters=clusters, n_init=10), name="k-means++", data=data_matrix)
-	#bench_k_means(KMeans(init='random', n_clusters=clusters, n_init=10), name="random", data=data_matrix)
+	# create boolean recipes matrix
+	recipes_matrix = np.zeros((N_RECIPES, N_FEATURES))
+	for sample in range(len(recipes_mapped)):
+		for item in range(len(recipes_mapped[sample])):
+			recipes_matrix[sample][item] = 1
+
+	#bench_k_means(KMeans(init='k-means++', n_clusters=clusters, n_init=10), name="k-means++", data=transactions_matrix)
+	#bench_k_means(KMeans(init='random', n_clusters=clusters, n_init=10), name="random", data=transactions_matrix)
 
 	#elbow methold for optimal K.
 	distortions = []
@@ -65,15 +76,15 @@ if __name__=='__main__':
 
 	for k in K:
 		#Building and fitting the model
-		kmeanModel = KMeans(n_clusters=k).fit(data_matrix)
-		kmeanModel.fit(data_matrix)
+		kmeanModel = KMeans(n_clusters=k).fit(transactions_matrix)
+		kmeanModel.fit(transactions_matrix)
 
-		distortions.append(sum(np.min(cdist(data_matrix, kmeanModel.cluster_centers_,
-		                  'euclidean'),axis=1)) / data_matrix.shape[0])
+		distortions.append(sum(np.min(cdist(transactions_matrix, kmeanModel.cluster_centers_,
+		                  'euclidean'),axis=1)) / transactions_matrix.shape[0])
 		inertias.append(kmeanModel.inertia_)
 
-		mapping1[k] = sum(np.min(cdist(data_matrix, kmeanModel.cluster_centers_,
-		             'euclidean'),axis=1)) / data_matrix.shape[0]
+		mapping1[k] = sum(np.min(cdist(transactions_matrix, kmeanModel.cluster_centers_,
+		             'euclidean'),axis=1)) / transactions_matrix.shape[0]
 		mapping2[k] = kmeanModel.inertia_
 
 	plt.plot(K, distortions, 'bx-')
@@ -90,10 +101,10 @@ if __name__=='__main__':
 
 	K = 8 #found by elbow method
 
-	kmeanModel = KMeans(n_clusters=K).fit(data_matrix)
-	kmeanModel.fit(data_matrix)
+	kmeanModel = KMeans(n_clusters=K).fit(transactions_matrix)
+	kmeanModel.fit(transactions_matrix)
 
-	results = kmeanModel.predict(data_matrix)
+	results = kmeanModel.predict(transactions_matrix)
 
 	counter = collections.Counter(results)
 
