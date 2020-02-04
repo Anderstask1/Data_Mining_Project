@@ -6,6 +6,7 @@ import numpy as np
 import collections
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import cdist
+import json
 
 def load_data(path):
 	'''
@@ -124,31 +125,40 @@ if __name__=='__main__':
 
 plt.plot(K, distortions, 'bx-')
 plt.xlabel('Values of K')
-plt.ylabel('Distortion') 
+plt.ylabel('Distortion')
 plt.title('The Elbow Method using Distortion')
 plt.show()
 
-plt.plot(K, inertias, 'bx-') 
-plt.xlabel('Values of K') 
-plt.ylabel('Inertia') 
-plt.title('The Elbow Method using Inertia') 
+plt.plot(K, inertias, 'bx-')
+plt.xlabel('Values of K')
+plt.ylabel('Inertia')
+plt.title('The Elbow Method using Inertia')
 plt.show()
 
+K = 8 #found by elbow method
+
+kmeanModel = KMeans(n_clusters=K).fit(data_matrix)
+kmeanModel.fit(data_matrix)
+
+results = kmeanModel.predict(data_matrix)
+
+counter = collections.Counter(results)
+
+print(counter)
+
 '''
-	clusterer = KMeans(init='k-means++', n_clusters=clusters, n_init=10)
-	clusterer.fit(data_matrix)          #do clustering
-	results = clusterer.predict(data_matrix)
-
-
 	with open('../results/cluster_results.txt', 'w') as f:
 	    for item in results:
 	        f.write("%s\n" % item)
 
+'''
 
-	counter = collections.Counter(results)
 
-	print(counter)
-	'''
+
+
+
+#todo bruk results til å dele inn tranaskjsoner etter custer. for hver kluster, sjekk hvilke n oppskrifter som er nærmest.
+
 
 
 
