@@ -1,100 +1,54 @@
-import csv
+
 from sklearn.cluster import KMeans
 from sklearn import metrics	
 from time import time
 import numpy as np
-import collections
+
 import matplotlib.pyplot as plt
-from scipy.spatial.distance import cdist
-import json
 
-def load_data(path):
-	'''
-	Function to read itemsets from file.
 
-	Parameters
-	----------
-	path : string
-	    path to file containinng transactions.
+import data_analysis
+import data_load
+from mapping import create_item_map, applymap, create_grocery_map
 
-	Returns
-	----------
-	transactions : list
-		list containing all transactions. Each transaction is a list of
-		items present in that transaction.
-	items : list
-		list containing all the unique items.
-	'''
-	items = []
-	with open(path, 'r') as f:
-	    reader = csv.reader(f)
-	    transactions = list(reader)
-	for x in transactions:
-		items.extend(x)
-	items=sorted(set(items))
-	return transactions, items
 
-def create_map(items):
-	'''
-	Function to map unique items to integers.
-
-	Parameters
-	----------
-	items : list
-	    list of unique items.
-
-	Returns
-	----------
-	map_ : dict
-		Items --> integers mapping.
-	reverse_map : dict
-		Integers --> items mapping.
-	'''
-	map_ = {x:i for i,x in enumerate(items)}
-	reverse_map = {i:x for i,x in enumerate(items)}
-	return map_, reverse_map
-
-def applymap(transaction, map_):
-	'''
-	Function to apply mapping to items.
-
-	Parameters
-	----------
-	transaction : list
-	    single transaction.
-	map_ : dict
-	    mapping.
-
-	Returns
-	----------
-	ret : dict
-		mapped transaction.
-	'''
-	ret = []
-	for item in transaction:
-
-		if item not in map_.keys(): #assign -1 to items nonexistent in transactions
-			ret.append(-1)
-
-		ret.append(map_[item])
-	return ret
-
+N_SAMPLES = 9835
+N_FEATURES = 169
+SIMILARITY_THRESHOLD = 0.75
+DATA_PATH_ITEMS = '../datasets/groceries.csv'
+DATA_PATH_RECIPES = '../datasets/recipe-ingredients-dataset/train.json'
 
 
 if __name__=='__main__':
-	data_path = '../datasets/groceries.csv'
-	transactions, items = load_data(data_path)
-	map_, reverse_map = create_map(items)
-	# pickle.dump(reverse_map, open('reverse_map.pkl', 'wb+'))
+
+# Load data, extract unique elements
+	transactions, items = data_load.load_data(DATA_PATH_ITEMS)
+	recipes, ingredients = data_load.load_json(DATA_PATH_RECIPES)
+
+	print("ingredients:", len(ingredients))
+
+	item_map, reverse_map = create_item_map(items)
+
 	one_itemset = [[itemset] for itemset in items]
-	items_mapped = [applymap(itemset, map_) for itemset in one_itemset]
-	transactions_mapped = [applymap(transaction, map_) for transaction in transactions]
+	items_mapped = [applymap(itemset, item_map) for itemset in one_itemset]
+	transactions_mapped = [applymap(transaction, item_map) for transaction in transactions]
+	print("mapped transactions")
 
-	n_samples = 9835
-	n_features = 169
+	groceries_map = create_grocery_map(items, ingredients, SIMILARITY_THRESHOLD, item_map)
 
-	#create boolean matrix
-	data_matrix = np.zeros((n_samples,n_features))
+	for k in groceries_map.keys():
+		print(groceries_map[k])
+
+	print("1")
+	one_ingredientset = [[ingredientset] for ingredientset in ingredients]
+	print("2")
+	ingredientset = [applymap(ingredientset, groceries_map) for ingredientset in one_ingredientset]
+	print("3")
+	recipes_mapped = [applymap(recipe['ingredients'], groceries_map) for recipe in recipes]
+	print("mapped recipes")
+
+#create boolean matrix
+	data_matrix = np.zeros((N_SAMPLES,N_FEATURES))
 	for sample in range(len(transactions_mapped)):
 		for item in range(len(transactions_mapped[sample])):
 			data_matrix[sample][item] = 1
@@ -109,7 +63,6 @@ if __name__=='__main__':
 	mapping2 = {}
 	K = range(1,20)
 
-
 	for k in K:
 		#Building and fitting the model
 		kmeanModel = KMeans(n_clusters=k).fit(data_matrix)
@@ -123,35 +76,35 @@ if __name__=='__main__':
 		             'euclidean'),axis=1)) / data_matrix.shape[0]
 		mapping2[k] = kmeanModel.inertia_
 
-plt.plot(K, distortions, 'bx-')
-plt.xlabel('Values of K')
-plt.ylabel('Distortion')
-plt.title('The Elbow Method using Distortion')
-plt.show()
+	plt.plot(K, distortions, 'bx-')
+	plt.xlabel('Values of K')
+	plt.ylabel('Distortion')
+	plt.title('The Elbow Method using Distortion')
+	plt.show()
 
-plt.plot(K, inertias, 'bx-')
-plt.xlabel('Values of K')
-plt.ylabel('Inertia')
-plt.title('The Elbow Method using Inertia')
-plt.show()
+	plt.plot(K, inertias, 'bx-')
+	plt.xlabel('Values of K')
+	plt.ylabel('Inertia')
+	plt.title('The Elbow Method using Inertia')
+	plt.show()
 
-K = 8 #found by elbow method
+	K = 8 #found by elbow method
 
-kmeanModel = KMeans(n_clusters=K).fit(data_matrix)
-kmeanModel.fit(data_matrix)
+	kmeanModel = KMeans(n_clusters=K).fit(data_matrix)
+	kmeanModel.fit(data_matrix)
 
-results = kmeanModel.predict(data_matrix)
+	results = kmeanModel.predict(data_matrix)
 
-counter = collections.Counter(results)
+	counter = collections.Counter(results)
 
-print(counter)
+	print(counter)
 
-'''
-	with open('../results/cluster_results.txt', 'w') as f:
-	    for item in results:
-	        f.write("%s\n" % item)
-
-'''
+	'''
+		with open('../results/cluster_results.txt', 'w') as f:
+			for item in results:
+				f.write("%s\n" % item)
+	
+	'''
 
 
 
