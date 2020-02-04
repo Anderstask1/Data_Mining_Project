@@ -1,4 +1,7 @@
 from sklearn.cluster import KMeans
+import numpy as np
+from scipy.spatial.distance import cdist
+import matplotlib.pyplot as plt
 
 def kmean_clustering(transactions_matrix, k_array):
     # elbow methold for optimal K.
