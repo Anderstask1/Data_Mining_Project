@@ -3,7 +3,6 @@ from sklearn.cluster import KMeans
 from sklearn import metrics
 import numpy as np
 import pickle
-from datasketch import MinHash
 
 #from data_analysis import match_analysis
 
@@ -15,8 +14,8 @@ from similarity import jaccard_similarity
 N_SAMPLES = 9835
 N_RECIPES = 39774
 N_FEATURES = 169
-SIMILARITY_THRESHOLD = 0.7
-JACCARDIAN_THRESHOLD = 0
+#SIMILARITY_THRESHOLD = 0.7
+JACCARDIAN_THRESHOLD = 0.5
 K = range(1, 20)
 DATA_PATH_ITEMS = '../datasets/groceries.csv'
 DATA_PATH_RECIPES = '../datasets/recipe-ingredients-dataset/train.json'
@@ -30,30 +29,14 @@ if __name__=='__main__':
 
 	print("ingredients:", len(ingredients))
 
-	data1 = transactions[2]
-	data2 = recipes[1]['ingredients']
+	#item_map, reverse_map = create_item_map(items)
 
-	m1, m2 = MinHash(), MinHash()
-	for d in data1:
-		m1.update(d.encode('utf8'))
-	for d in data2:
-		m2.update(d.encode('utf8'))
-	approximated_jaccard =  m1.jaccard(m2)
-	print("Estimated Jaccard for data1 and data2 is", approximated_jaccard)
+	#one_itemset = [[itemset] for itemset in items]
+	#items_mapped = [applymap(itemset, item_map) for itemset in one_itemset]
+	#transactions_mapped = [applymap(transaction, item_map) for transaction in transactions]
+	#print("mapped transactions")
 
-	s1 = set(data1)
-	s2 = set(data2)
-	actual_jaccard = float(len(s1.intersection(s2))) / float(len(s1.union(s2)))
-	print("Actual Jaccard for data1 and data2 is", actual_jaccard)
-
-	item_map, reverse_map = create_item_map(items)
-
-	one_itemset = [[itemset] for itemset in items]
-	items_mapped = [applymap(itemset, item_map) for itemset in one_itemset]
-	transactions_mapped = [applymap(transaction, item_map) for transaction in transactions]
-	print("mapped transactions")
-
-	#groceries_map = create_grocery_map(items, ingredients, SIMILARITY_THRESHOLD, item_map)
+	#groceries_map = create_grocery_map(items, ingredients, SIMILARITY_THRESHOLD)
 
 	#with open('groceries_map.pickle', 'wb') as handle:
 	#	pickle.dump(groceries_map, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -66,32 +49,49 @@ if __name__=='__main__':
 	recipes_mapped = [applymap(recipe['ingredients'], groceries_map) for recipe in recipes]
 
 	# create boolean transaction matrix
-	transactions_matrix = np.zeros((N_SAMPLES,N_FEATURES),dtype=int)
-	for sample_index in range(len(transactions_mapped)):
-		for item_index in transactions_mapped[sample_index]:
-			transactions_matrix[sample_index][item_index] = 1
+	#transactions_matrix = np.zeros((N_SAMPLES,N_FEATURES),dtype=int)
+	#for sample_index in range(len(transactions_mapped)):
+	#	for item_index in transactions_mapped[sample_index]:
+	#		transactions_matrix[sample_index][item_index] = 1
 
 	# create boolean recipes matrix
-	recipes_matrix = np.zeros((N_RECIPES, N_FEATURES), dtype=int)
-	for sample_index in range(len(recipes_mapped)):
-		for item_index in recipes_mapped[sample_index]:
-			if item_index != -1:
-				recipes_matrix[sample_index][item_index] = 1
+	#recipes_matrix = np.zeros((N_RECIPES, N_FEATURES), dtype=int)
+	#for sample_index in range(len(recipes_mapped)):
+	#	for item_index in recipes_mapped[sample_index]:
+	#		if item_index != -1:
+	#			recipes_matrix[sample_index][item_index] = 1
 
 	#results = kmean_clustering(transactions_matrix, K)
 	with open('k_mean_results.pickle', 'rb') as handle:
 		results = pickle.load(handle)
 
-	similarity_vector = []
-	for transaction in transactions_matrix:
-		similar_recipes = {}
-		for index, recipe in enumerate(recipes_matrix):
-			jacc_similarity = jaccard_similarity(transaction, recipe)
-			if jacc_similarity > JACCARDIAN_THRESHOLD:
-				similar_recipes[index%168] = jacc_similarity #169 elements in shingle, modulo 168 give index
-		similarity_vector.append(similar_recipes)
+	data1 = transactions[2]
+	data2 = recipes_mapped[1]
 
-print(similarity_vector)
+	# Create LSH index
+	lsh = MinHashLSH(threshold=JACCARDIAN_THRESHOLD, num_perm=128)
+
+	# Hash transaction
+	for index_r, recipe in enumerate(recipes_mapped):
+		# Init hash functions for transaction and recipe
+		min_hash = MinHash(num_perm=128)
+		for ingredient in recipe:
+			min_hash.update(ingredient.encode('utf8'))
+		lsh.insert(index_r, min_hash)
+
+	similarity_matrix = []
+	for transaction in transactions:
+		# Init hash functions for transaction and recipe
+		min_hash = MinHash(num_perm=128)
+		# Hash recipe
+		for grocery in transaction:
+			min_hash.update(grocery.encode('utf8'))
+		# Find similarity between transacion and all recipes
+		approximated_jaccard = lsh.query(min_hash)
+		similarity_matrix.append(approximated_jaccard)
+
+	for index_t, similarity_list in enumerate(similarity_matrix):
+		print("transaction with index:", index_t, "is similar to:", len(similarity_list), " recipes")
 
 '''
 		with open('../results/cluster_results.txt', 'w') as f:

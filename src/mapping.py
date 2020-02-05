@@ -59,17 +59,16 @@ match_count=0
 items_without_matches = []
 
 # Mapping from grocerie to int, dependent on item map
-def create_grocery_map(items, ingredients, threshold, item_map):
+def create_grocery_map(items, ingredients, threshold):
     grocery_map = {}
     similarities = {}
 
     for ingredient in ingredients:
-        grocery_map[ingredient] = -1
+        grocery_map[ingredient] = ingredient
         for item in items:
             similarities[ingredient] = - 1
             similarity = SequenceMatcher(None, item, ingredient).ratio()
             if similarity > threshold and similarity > similarities[ingredient]: #make sure 1-1 mapping by only using best similarity
                 similarities[ingredient] = similarity #save highest similarity
-                mapped_int = item_map[item]
-                grocery_map[ingredient]= mapped_int
+                grocery_map[ingredient]= item
     return grocery_map
