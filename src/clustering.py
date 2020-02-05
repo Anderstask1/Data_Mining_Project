@@ -2,8 +2,10 @@ from sklearn.cluster import KMeans
 import numpy as np
 from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
+import collections
 
-def kmean_clustering(transactions_matrix, k_array):
+def kmean_clustering(matrix, k_array):
+    print("Running kmeans Clustering")
     # elbow methold for optimal K.
     distortions = []
     inertias = []
@@ -12,41 +14,35 @@ def kmean_clustering(transactions_matrix, k_array):
 
     for k in k_array:
         # Building and fitting the model
-        kmeanModel = KMeans(n_clusters=k).fit(transactions_matrix)
-        kmeanModel.fit(transactions_matrix)
+        kmeanModel = KMeans(n_clusters=k).fit(matrix)
+        kmeanModel.fit(matrix)
 
-        distortions.append(sum(np.min(cdist(transactions_matrix, kmeanModel.cluster_centers_,
-                                            'euclidean'), axis=1)) / transactions_matrix.shape[0])
+        distortions.append(sum(np.min(cdist(matrix, kmeanModel.cluster_centers_,
+                                            'euclidean'), axis=1)) / matrix.shape[0])
         inertias.append(kmeanModel.inertia_)
 
-        mapping1[k] = sum(np.min(cdist(transactions_matrix, kmeanModel.cluster_centers_,
-                                       'euclidean'), axis=1)) / transactions_matrix.shape[0]
+        mapping1[k] = sum(np.min(cdist(matrix, kmeanModel.cluster_centers_,
+                                       'euclidean'), axis=1)) / matrix.shape[0]
         mapping2[k] = kmeanModel.inertia_
 
-    plt.plot(K, distortions, 'bx-')
+    plt.plot(k_array, distortions, 'bx-')
     plt.xlabel('Values of K')
     plt.ylabel('Distortion')
     plt.title('The Elbow Method using Distortion')
     plt.show()
 
-    plt.plot(K, inertias, 'bx-')
+    plt.plot(k_array, inertias, 'bx-')
     plt.xlabel('Values of K')
     plt.ylabel('Inertia')
     plt.title('The Elbow Method using Inertia')
     plt.show()
 
-    K = 8  # found by elbow method
+    K = 10  # found by elbow method
 
-    kmeanModel = KMeans(n_clusters=K).fit(transactions_matrix)
-    kmeanModel.fit(transactions_matrix)
+    kmeanModel = KMeans(n_clusters=K).fit(matrix)
+    kmeanModel.fit(matrix)
 
-    # results = kmeanModel.predict(transactions_matrix)
-
-    # with open('k_mean_results.pickle', 'wb') as handle:
-    #	pickle.dump(results, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-    with open('k_mean_results.pickle', 'rb') as handle:
-        results = pickle.load(handle)
+    results = kmeanModel.predict(matrix)
 
     counter = collections.Counter(results)
 

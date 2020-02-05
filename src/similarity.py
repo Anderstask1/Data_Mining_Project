@@ -33,5 +33,5 @@ def max_jaccard_similarity(similarity_matrix, transactions, recipes_mapped):
                 max_similarity = similarity
                 max_similarity_key = key_recipe
         if max_similarity_key != -1:
-            jaccard_similarities[key_transaction] = [max_similarity, max_similarity_key]
+            jaccard_similarities[key_transaction] = {"key": max_similarity_key, "similarity": max_similarity}
     return jaccard_similarities
