@@ -1,6 +1,6 @@
 import numpy as np
 
-def jaccard_similarity(x, y):
+def jaccard_similarity_boolean(x, y):
     """
     Jaccard Similarity J (A,B) = | Intersection (A,B) | / | Union (A,B) |
     """
@@ -17,11 +17,7 @@ def jaccard_similarity(x, y):
     return intersection
 
 
-a= [0,0,0,1,1,1]
-
-b= [0,1,0,0,1,0]
-
-c= jaccard_similarity(a,b)
-
-
-print(c)
+def jaccard_similarity(x, y):
+    set_x = set(x)
+    set_y = set(y)
+    return float(len(set_x.intersection(set_y))) / float(len(set_x.union(set_y)))

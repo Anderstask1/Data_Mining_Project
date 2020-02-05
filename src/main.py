@@ -10,12 +10,14 @@ import data_load
 from mapping import create_item_map, applymap, create_grocery_map
 from clustering import kmean_clustering
 from similarity import jaccard_similarity
+from locality_sensitive_hashing import minhash_lsh
 
 N_SAMPLES = 9835
 N_RECIPES = 39774
 N_FEATURES = 169
 #SIMILARITY_THRESHOLD = 0.7
 JACCARDIAN_THRESHOLD = 0.5
+PERMUTATIONS = 128
 K = range(1, 20)
 DATA_PATH_ITEMS = '../datasets/groceries.csv'
 DATA_PATH_RECIPES = '../datasets/recipe-ingredients-dataset/train.json'
@@ -65,30 +67,29 @@ if __name__=='__main__':
 	with open('k_mean_results.pickle', 'rb') as handle:
 		results = pickle.load(handle)
 
-	data1 = transactions[2]
-	data2 = recipes_mapped[1]
+	# Find recipes index with approximate similarity above threshold to all transactions
+	#similarity_matrix = minhash_lsh(recipes_mapped, transactions, JACCARDIAN_THRESHOLD, PERMUTATIONS)
 
-	# Create LSH index
-	lsh = MinHashLSH(threshold=JACCARDIAN_THRESHOLD, num_perm=128)
+	#with open('similarity_matrix.pickle', 'wb') as handle:
+	#	pickle.dump(similarity_matrix, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-	# Hash transaction
-	for index_r, recipe in enumerate(recipes_mapped):
-		# Init hash functions for transaction and recipe
-		min_hash = MinHash(num_perm=128)
-		for ingredient in recipe:
-			min_hash.update(ingredient.encode('utf8'))
-		lsh.insert(index_r, min_hash)
+	with open('similarity_matrix.pickle', 'rb') as handle:
+		similarity_matrix = pickle.load(handle)
 
-	similarity_matrix = []
-	for transaction in transactions:
-		# Init hash functions for transaction and recipe
-		min_hash = MinHash(num_perm=128)
-		# Hash recipe
-		for grocery in transaction:
-			min_hash.update(grocery.encode('utf8'))
-		# Find similarity between transacion and all recipes
-		approximated_jaccard = lsh.query(min_hash)
-		similarity_matrix.append(approximated_jaccard)
+	jaccard_similarities = {}
+	remaining_similarity_matrix = []
+	for index_transaction, transaction_similarity in enumerate(similarity_matrix):
+		max_similarity = -1
+		max_similarity_index = -1
+		for index_recipe in transaction_similarity:
+			similarity = jaccard_similarity(transactions[index_transaction], recipes_mapped[index_recipe])
+			if similarity > max_similarity:
+				max_similarity = similarity
+				max_similarity_index = index_recipe
+		if max_similarity_index != -1:
+			jaccard_similarities[index_transaction] = [max_similarity, max_similarity_index]
+
+	similarity_matrix = minhash_lsh(recipes_mapped, transactions, JACCARDIAN_THRESHOLD/2, PERMUTATIONS)
 
 	for index_t, similarity_list in enumerate(similarity_matrix):
 		print("transaction with index:", index_t, "is similar to:", len(similarity_list), " recipes")
