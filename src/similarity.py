@@ -13,8 +13,8 @@ def jaccard_similarity(x, y):
     y = np.array(y)
 
     intersection = np.sum(np.bitwise_and(x,y))
-    union = np.sum(np.bitwise_or(x,y))
-    return intersection/union
+    #union = np.sum(np.bitwise_or(x,y))
+    return intersection
 
 
 a= [0,0,0,1,1,1]
