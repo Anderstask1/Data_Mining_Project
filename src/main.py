@@ -10,12 +10,13 @@ import data_load
 from mapping import create_item_map, applymap, create_grocery_map
 from clustering import kmean_clustering
 from similarity import jaccard_similarity, max_jaccard_similarity
-from locality_sensitive_hashing import minhash_lsh
+from data_cleaning import clean_dictionary
+
 
 N_SAMPLES = 9835
 N_RECIPES = 39774
 N_FEATURES = 169
-#SIMILARITY_THRESHOLD = 0.7
+SIMILARITY_THRESHOLD = 0.7
 JACCARDIAN_THRESHOLD = 0.5
 PERMUTATIONS = 128
 K = range(1, 20)
@@ -28,6 +29,9 @@ if __name__=='__main__':
 	# Load data, extract unique elements
 	transactions, items = data_load.load_data(DATA_PATH_ITEMS)
 	recipes, ingredients = data_load.load_json(DATA_PATH_RECIPES)
+
+	# Remove all groceries in transaction not in ingredients
+	transactions = clean_dictionary(transactions, ingredients)
 
 	print("ingredients:", len(ingredients))
 
@@ -48,26 +52,13 @@ if __name__=='__main__':
 
 	one_ingredientset = [[ingredientset] for ingredientset in ingredients]
 	ingredientset = [applymap(ingredientset, groceries_map) for ingredientset in one_ingredientset]
-	recipes_mapped = [applymap(recipe['ingredients'], groceries_map) for recipe in recipes]
-
-	# create boolean transaction matrix
-	#transactions_matrix = np.zeros((N_SAMPLES,N_FEATURES),dtype=int)
-	#for sample_index in range(len(transactions_mapped)):
-	#	for item_index in transactions_mapped[sample_index]:
-	#		transactions_matrix[sample_index][item_index] = 1
-
-	# create boolean recipes matrix
-	#recipes_matrix = np.zeros((N_RECIPES, N_FEATURES), dtype=int)
-	#for sample_index in range(len(recipes_mapped)):
-	#	for item_index in recipes_mapped[sample_index]:
-	#		if item_index != -1:
-	#			recipes_matrix[sample_index][item_index] = 1
+	recipes_mapped = {key: applymap(recipe['ingredients'], groceries_map) for key, recipe in recipes.items()}
 
 	#results = kmean_clustering(transactions_matrix, K)
 	with open('k_mean_results.pickle', 'rb') as handle:
 		results = pickle.load(handle)
 
-	# Find recipes index with approximate similarity above threshold to all transactions
+	# Find recipes key with approximate similarity above threshold to all transactions
 	#similarity_matrix = minhash_lsh(recipes_mapped, transactions, JACCARDIAN_THRESHOLD, PERMUTATIONS)
 
 	#with open('similarity_matrix.pickle', 'wb') as handle:
@@ -76,14 +67,30 @@ if __name__=='__main__':
 	with open('similarity_matrix.pickle', 'rb') as handle:
 		similarity_matrix = pickle.load(handle)
 
+	# Find highest true jaccard similarities for each transaction
 	jaccard_similarities = max_jaccard_similarity(similarity_matrix, transactions, recipes_mapped)
 
-	for index_t, similarity_list in enumerate(similarity_matrix):
-		print("transaction with index:", index_t, "is similar to:", len(similarity_list), " recipes")
+	# Find keys to transaction without similar recipe
+	missing_similarity_keys = [key for key, x in similarity_matrix.items() if x == []]
 
-'''
-		with open('../results/cluster_results.txt', 'w') as f:
-			for item in results:
-				f.write("%s\n" % item)
-	
-'''
+	# Create ned dictionary with only transactions without similar recipe
+	filtered_transactions = {}
+	for key in missing_similarity_keys:
+		filtered_transactions[key] = transactions[key]
+
+	# Find recipes key with approximate similarity above threshold to all filtered transactions
+	#filtered_similarity_matrix = minhash_lsh(recipes_mapped, filtered_transactions, JACCARDIAN_THRESHOLD/2, PERMUTATIONS)
+
+	#with open('filtered_similarity_matrix.pickle', 'wb') as handle:
+	#	pickle.dump(filtered_similarity_matrix, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+	with open('filtered_similarity_matrix.pickle', 'rb') as handle:
+		filtered_similarity_matrix = pickle.load(handle)
+
+	# Find highest true jaccard similarities for each filtered transaction
+	filtered_jaccard_similarities = max_jaccard_similarity(filtered_similarity_matrix, transactions, recipes_mapped)
+
+	# Merge dictionaries of true jaccard similarities
+	jaccard_similarities.update(filtered_jaccard_similarities)
+
+	print("jaccard_similarities: ", jaccard_similarities)

@@ -24,14 +24,14 @@ def jaccard_similarity(x, y):
 
 def max_jaccard_similarity(similarity_matrix, transactions, recipes_mapped):
     jaccard_similarities = {}
-    for index_transaction, transaction_similarity in enumerate(similarity_matrix):
+    for key_transaction, transaction_similarity in similarity_matrix.items():
         max_similarity = -1
-        max_similarity_index = -1
-        for index_recipe in transaction_similarity:
-            similarity = jaccard_similarity(transactions[index_transaction], recipes_mapped[index_recipe])
+        max_similarity_key = -1
+        for key_recipe in transaction_similarity:
+            similarity = jaccard_similarity(transactions[key_transaction], recipes_mapped[key_recipe])
             if similarity > max_similarity:
                 max_similarity = similarity
-                max_similarity_index = index_recipe
-        if max_similarity_index != -1:
-            jaccard_similarities[index_transaction] = [max_similarity, max_similarity_index]
+                max_similarity_key = key_recipe
+        if max_similarity_key != -1:
+            jaccard_similarities[key_transaction] = [max_similarity, max_similarity_key]
     return jaccard_similarities

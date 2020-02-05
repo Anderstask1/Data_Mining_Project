@@ -7,6 +7,8 @@ def load_json(path):
     with open(path, 'r') as f:
         recipes = json.load(f)
 
+
+
     ingredients = []
 
     for recipe in recipes:
@@ -19,10 +21,10 @@ def load_json(path):
     print("ingredients after:", len(ingredients))
 
 
-    return recipes, ingredients
+    return dict(enumerate(recipes)), ingredients
 
 def load_data(path):
-	'''
+    '''
 	Function to read itemsets from file.
 
 	Parameters
@@ -38,12 +40,12 @@ def load_data(path):
 	items : list
 		list containing all the unique items.
 	'''
-	items = []
-	with open(path, 'r') as f:
-	    reader = csv.reader(f)
-	    transactions = list(reader)
-	for x in transactions:
-		items.extend(x)
-	items=sorted(set(items))
-	return transactions, items
+    items = []
+    with open(path, 'r') as f:
+        reader = csv.reader(f)
+        transactions = list(reader)
+    for x in transactions:
+        items.extend(x)
+    items=sorted(set(items))
+    return dict(enumerate(transactions)), items
 
