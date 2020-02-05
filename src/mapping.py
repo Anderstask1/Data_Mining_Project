@@ -72,3 +72,4 @@ def create_grocery_map(items, ingredients, threshold):
                 similarities[ingredient] = similarity #save highest similarity
                 grocery_map[ingredient]= item
     return grocery_map
+

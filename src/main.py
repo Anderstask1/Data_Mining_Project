@@ -57,11 +57,7 @@ if __name__=='__main__':
 	#		transactions_matrix[sample_index][item_index] = 1
 
 	# create boolean recipes matrix
-	#recipes_matrix = np.zeros((N_RECIPES, N_FEATURES), dtype=int)
-	#for sample_index in range(len(recipes_mapped)):
-	#	for item_index in recipes_mapped[sample_index]:
-	#		if item_index != -1:
-	#			recipes_matrix[sample_index][item_index] = 1
+	recipes_matrix = np.zeros((N_RECIPES, N_FEATURES), dtype=int)
 
 	#results = kmean_clustering(transactions_matrix, K)
 	with open('k_mean_results.pickle', 'rb') as handle:
