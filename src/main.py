@@ -9,7 +9,7 @@ import pickle
 import data_load
 from mapping import create_item_map, applymap, create_grocery_map
 from clustering import kmean_clustering
-from similarity import jaccard_similarity
+from similarity import jaccard_similarity, max_jaccard_similarity
 from locality_sensitive_hashing import minhash_lsh
 
 N_SAMPLES = 9835
@@ -76,20 +76,7 @@ if __name__=='__main__':
 	with open('similarity_matrix.pickle', 'rb') as handle:
 		similarity_matrix = pickle.load(handle)
 
-	jaccard_similarities = {}
-	remaining_similarity_matrix = []
-	for index_transaction, transaction_similarity in enumerate(similarity_matrix):
-		max_similarity = -1
-		max_similarity_index = -1
-		for index_recipe in transaction_similarity:
-			similarity = jaccard_similarity(transactions[index_transaction], recipes_mapped[index_recipe])
-			if similarity > max_similarity:
-				max_similarity = similarity
-				max_similarity_index = index_recipe
-		if max_similarity_index != -1:
-			jaccard_similarities[index_transaction] = [max_similarity, max_similarity_index]
-
-	similarity_matrix = minhash_lsh(recipes_mapped, transactions, JACCARDIAN_THRESHOLD/2, PERMUTATIONS)
+	jaccard_similarities = max_jaccard_similarity(similarity_matrix, transactions, recipes_mapped)
 
 	for index_t, similarity_list in enumerate(similarity_matrix):
 		print("transaction with index:", index_t, "is similar to:", len(similarity_list), " recipes")
