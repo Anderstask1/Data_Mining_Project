@@ -149,7 +149,7 @@ if __name__=='__main__':
 	copy = customer_clusters
 	for k in range(K):
 		for recipe in list(customer_clusters[k].keys()):
-			if customer_clusters[k][recipe] < 1:
+			if customer_clusters[k][recipe] < 0.8:
 				try:
 					del copy[k][recipe]
 				except KeyError:
@@ -163,11 +163,10 @@ if __name__=='__main__':
 
 	print(customer_clusters)
 
-	with open('customer_clusters.pickle', 'wb') as handle:
-		pickle.dump(customer_clusters, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-	print(recipes[35169])
-	print(recipes[7666])
-	print(recipes[2226])
+	#with open('customer_clusters.pickle', 'wb') as handle:
+	#	pickle.dump(customer_clusters, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 	print("finito")
+
+	for recipe_id in customer_clusters[5]:
+		print(recipes[recipe_id])
