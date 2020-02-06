@@ -33,6 +33,7 @@ for recipe in customer_clusters[2].keys():
     cluster2_names.append(str(recipe))
 
 x = np.arange(42)
+
 print(x)
 
 plt.bar(x, height= cluster2, color= [colors])

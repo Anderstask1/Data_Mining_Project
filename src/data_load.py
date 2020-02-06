@@ -7,19 +7,14 @@ def load_json(path):
     with open(path, 'r') as f:
         recipes = json.load(f)
 
-
-
     ingredients = []
 
     for recipe in recipes:
         for ingredient in recipe["ingredients"]:
             ingredients.append(ingredient)
 
-    print("ingredients with duplicates:", len(ingredients))
+    #create list of unique items
     ingredients = list(dict.fromkeys(ingredients))  # remove duplicates
-
-    print("ingredients after:", len(ingredients))
-
 
     return dict(enumerate(recipes)), ingredients
 
