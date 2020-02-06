@@ -18,11 +18,19 @@ def similar(a, b, threshold):
 with open(DATA_PATH_RECIPES, 'r') as f:
     recipes = json.load(f)
 
+print(recipes)
 ingredients = []
 
 for recipe in recipes:
     for ingredient in recipe["ingredients"]:
         ingredients.append(ingredient)
+
+cuisines = []
+for recipe in recipes:
+    cuisines.append(recipe["cuisine"])
+cuisines = list(dict.fromkeys(cuisines))  # remove duplicates
+
+print("cuicines: ",len(cuisines))
 
 print("ingredients with duplicates:", len(ingredients))
 ingredients = list(dict.fromkeys(ingredients))  # remove duplicates

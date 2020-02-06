@@ -1,5 +1,7 @@
 from datasketch import MinHash, MinHashLSH
 
+
+# Return dict. Key is index (id) of transactions and values are lists of matching recipes
 def minhash_lsh(matrix_a, matrix_b, threshold, permutations):
 	print("Running Min Hash and Locality Sensitive Hashing")
 	similarity_matrix = {}
