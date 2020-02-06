@@ -13,6 +13,7 @@ def kmean_clustering(matrix, k_array):
     mapping2 = {}
 
     for k in k_array:
+        print("round: ",k)
         # Building and fitting the model
         kmeanModel = KMeans(n_clusters=k).fit(matrix)
         kmeanModel.fit(matrix)

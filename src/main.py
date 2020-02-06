@@ -56,11 +56,14 @@ if __name__=='__main__':
     #print("transactions: ",transactions)
     #print("ingredients:", len(ingredients))
 
+    #todo: fiks encoding, den er helt feil. clustre før eller etter mapping?
+
     # Encode recipes into binary vectors
     binary_shingle_matrix = np.zeros((N_RECIPES, N_FEATURES))
     for recipe in range(len(recipes_mapped)):
-        for ingredient in range(len(recipes_mapped[recipe])):
+        for ingredient in recipes_mapped[recipe]:
             binary_shingle_matrix[recipe][ingredient] = 1
+    print(binary_shingle_matrix)
 
     # Returns list with cluster (int) at corresponding index
     #clustering_results = kmean_clustering(binary_shingle_matrix, K_ARRAY)
