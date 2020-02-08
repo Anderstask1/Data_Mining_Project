@@ -83,7 +83,7 @@ if __name__=='__main__':
     with open('k_mean_results.pickle', 'rb') as handle:
         clustering_results = pickle.load(handle)
 
-
+    print(collections.Counter(clustering_results))
     # FIND SIMILAR TRANSACTIONS AND CLUSTERS AND ADD TRANSACTIONS TO CLUSTERS
     '''
     similarity_matrix = minhash_lsh(recipes_mapped, transactions_cleaned, JACCARDIAN_THRESHOLD, PERMUTATIONS)
@@ -91,13 +91,13 @@ if __name__=='__main__':
     # Save similarities
     with open('similarity_matrix.pickle', 'wb') as handle:
         pickle.dump(similarity_matrix, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    '''
+
     # Get jaccard similarities of transactions and recipes
     with open('similarity_matrix.pickle', 'rb') as handle:
         similarity_matrix = pickle.load(handle)
 
     # Find highest true jaccard similarities for each transaction
-    '''
+
     jaccard_similarities = max_jaccard_similarity(similarity_matrix, transactions_cleaned, recipes_mapped)
 
     # Add cluster value to transactions
@@ -117,11 +117,11 @@ if __name__=='__main__':
 
 
     #HANDLE TRANSACTIONS WITH NO MATCH
-
+    '''
     # Find keys to transaction without similar recipe
     missing_similarity_keys = [key for key, x in similarity_matrix.items() if x == []]
-    '''
-    PRØVER HELLER Å LAGE NY LISTE MED TRANASJONER UTEN MATCH, IKKE DICT. DET ER FORDI VI KLSUTRET ALLE 9800 OPPSKRIVER, MANGE SOM ER KUN 0.
+    
+    #PRØVER HELLER Å LAGE NY LISTE MED TRANASJONER UTEN MATCH, IKKE DICT. DET ER FORDI VI KLSUTRET ALLE 9800 OPPSKRIVER, MANGE SOM ER KUN 0.
     # Create new dictionary with only transactions without similar recipe.
     unmatched_transactions = {}
     for key in missing_similarity_keys:
@@ -135,9 +135,8 @@ if __name__=='__main__':
     for transaction in unmatched_transactions:
         for grocery in unmatched_transactions[transaction]:
             binary_shingle_transactions[transaction][map_[grocery]] = 1
-    '''
-    # LAG NYTT SETT MED TRANSAKSJONER
-    '''
+
+    #lag nytt sett med tranaksjoner
     map_, _ = create_item_map(items)
     unmatched_transactions = []
     for key in missing_similarity_keys:
@@ -159,12 +158,14 @@ if __name__=='__main__':
     with open('unmatched_transactions.pickle', 'wb') as handle:
         pickle.dump(unmatched_transactions, handle, protocol=pickle.HIGHEST_PROTOCOL)
     '''
+
     # Get cluster of transactions
     with open('clustering_transaction_results.pickle', 'rb') as handle:
         clustering_transaction_results = pickle.load(handle)
 
 
     # Find most similar recipes in every cluster
+    '''
     customer_clusters = {}
     for k in range(K):
         customer_clusters[k] = {}
@@ -182,7 +183,7 @@ if __name__=='__main__':
             customer_clusters[cluster][recipe] += similarity
 
     print(customer_clusters)
-    '''
+    
 
     #with open('customer_clusters.pickle', 'wb') as handle:
         #pickle.dump(customer_clusters, handle, protocol=pickle.HIGHEST_PROTOCOL)

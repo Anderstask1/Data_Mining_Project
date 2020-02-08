@@ -11,7 +11,6 @@ with open('ingredients_map.pickle', 'rb') as handle:
     ingredients_map = pickle.load(handle)
 
 recipes_mapped = {key: applymap(recipe['ingredients'], ingredients_map) for key, recipe in recipes.items()}
-
 recipes_cleaned = {key: recipe["ingredients"] for key, recipe in recipes.items()}
 
 
@@ -60,6 +59,8 @@ def find_cuisines(recipes,cluster_results,K):
     return ret
 
 pop_ingredients_in_clusters = find_ingredients_in_each_cluster(recipes_mapped,clustering_results,10)
+with open('pop_ingredients_in_clusters.pickle', 'wb') as handle:
+    pickle.dump(pop_ingredients_in_clusters, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 #for k in range(10):
 #    print(pop_ingredients_in_clusters[k])
@@ -74,13 +75,31 @@ with open('unmatched_transactions.pickle', 'rb') as handle:
 pop_ing_in_trans_no_match = find_ingredients_in_each_cluster(unmatched_transactions,clustering_transaction_results,8)
 with open('pop_ing_in_trans_no_match.pickle', 'wb') as handle:
     pickle.dump(pop_ing_in_trans_no_match, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    
-for k in range(8):
-    print(k,": ",pop_ing_in_trans_no_match[k])
 
+#for k in range(8):
+#    print(k,": ",pop_ing_in_trans_no_match[k])
 
-with open('pop_ingredients_in_clusters.pickle', 'wb') as handle:
-        pickle.dump(pop_ingredients_in_clusters, handle, protocol=pickle.HIGHEST_PROTOCOL)
+#pop itemns in cluesters based on recipes.
+with open('jaccard_similarities.pickle', 'rb') as handle:
+    jaccard_similarities = pickle.load(handle)
+
+DATA_PATH_ITEMS = '../datasets/groceries.csv'
+transactions, items = data_load.load_data(DATA_PATH_ITEMS)
+
+matched_transactions = []
+mapped_trans_clusters = []
+for trans, data in jaccard_similarities.items():
+    matched_transactions.append(transactions[trans])
+    mapped_trans_clusters.append(data["cluster"])
+
+print("trans i clusters: ",collections.Counter(mapped_trans_clusters))
+
+pop_groc_in_trans_with_match = find_ingredients_in_each_cluster(matched_transactions,mapped_trans_clusters,10)
+
+print(pop_groc_in_trans_with_match)
+
+with open('pop_groc_in_trans_with_match.pickle', 'wb') as handle:
+    pickle.dump(pop_groc_in_trans_with_match, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 #clustering without mapping
