@@ -33,14 +33,16 @@ if __name__=='__main__':
     transactions, items = data_load.load_data(DATA_PATH_ITEMS)
     recipes, ingredients = data_load.load_json(DATA_PATH_RECIPES)
 
-    # Map groceries
-    #ingredients_map = create_grocery_map(items, ingredients, SIMILARITY_THRESHOLD)
+    # Map ingredients to match similar groceries, or to itself if below threshold
+    '''
+    ingredients_map = create_grocery_map(items, ingredients, SIMILARITY_THRESHOLD)
 
-    #with open('ingredients_map.pickle', 'wb') as handle:
-    #	pickle.dump(ingredients_map, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
+    with open('ingredients_map.pickle', 'wb') as handle:
+    	pickle.dump(ingredients_map, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    '''
     with open('ingredients_map.pickle', 'rb') as handle:
         ingredients_map = pickle.load(handle)
+
 
     one_ingredientset = [[ingredientset] for ingredientset in ingredients]
     ingredientset = [applymap(ingredientset, ingredients_map) for ingredientset in one_ingredientset]
@@ -50,81 +52,53 @@ if __name__=='__main__':
 
 
     # Remove all groceries in transaction not in ingredients
-    transactions = clean_dictionary(transactions, ingredients_mapped)
+    transactions_cleaned = clean_dictionary(transactions, ingredients_mapped)
 
-    #print("trans wrong: ", transactions_wrong)
-    #print("transactions: ",transactions)
-    #print("ingredients:", len(ingredients))
-
-    #todo: fiks encoding, den er helt feil. clustre før eller etter mapping?
-
+    '''
+    map_,_ = create_item_map(ingredients_mapped)
     # Encode recipes into binary vectors
-    binary_shingle_matrix = np.zeros((N_RECIPES, N_FEATURES))
+    binary_shingle_matrix = np.zeros((N_RECIPES, len(ingredients_map)))
     for recipe in range(len(recipes_mapped)):
         for ingredient in recipes_mapped[recipe]:
-            binary_shingle_matrix[recipe][ingredient] = 1
+            binary_shingle_matrix[recipe][map_[ingredient]] = 1
     print(binary_shingle_matrix)
+    '''
+
+    #CLUSTER RECIPES INTO 10 CLUSTERS BASED ON INGREDIENTS
+    '''
+    map_, reverse_map = create_item_map(ingredients) #for mapping ingredients to integers
+
+    binary_shingle_matrix = np.zeros((len(recipes), len(ingredients)))
+    for recipe_id in range(len(recipes)):
+        for ingredient in recipes[recipe_id]["ingredients"]:
+            binary_shingle_matrix[recipe_id][map_[ingredient]] = 1
 
     # Returns list with cluster (int) at corresponding index
-    #clustering_results = kmean_clustering(binary_shingle_matrix, K_ARRAY)
+    clustering_results = kmean_clustering(binary_shingle_matrix, K_ARRAY)
 
     # Save clustering results
-    #with open('k_mean_results.pickle', 'wb') as handle:
-    #	pickle.dump(clustering_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
+    with open('k_mean_results.pickle', 'wb') as handle:
+    	pickle.dump(clustering_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    '''
     with open('k_mean_results.pickle', 'rb') as handle:
         clustering_results = pickle.load(handle)
 
-    counter = collections.Counter(clustering_results)
-    print(counter)
 
-    # Find recipes key with approximate similarity above threshold to all transactions
-    #similarity_matrix = minhash_lsh(recipes_mapped, transactions, JACCARDIAN_THRESHOLD, PERMUTATIONS)
+    # FIND SIMILAR TRANSACTIONS AND CLUSTERS AND ADD TRANSACTIONS TO CLUSTERS
+    '''
+    similarity_matrix = minhash_lsh(recipes_mapped, transactions_cleaned, JACCARDIAN_THRESHOLD, PERMUTATIONS)
 
     # Save similarities
-    #with open('similarity_matrix.pickle', 'wb') as handle:
-        #pickle.dump(similarity_matrix, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
+    with open('similarity_matrix.pickle', 'wb') as handle:
+        pickle.dump(similarity_matrix, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    '''
     # Get jaccard similarities of transactions and recipes
     with open('similarity_matrix.pickle', 'rb') as handle:
         similarity_matrix = pickle.load(handle)
 
-    print(similarity_matrix)
     # Find highest true jaccard similarities for each transaction
-    jaccard_similarities = max_jaccard_similarity(similarity_matrix, transactions, recipes_mapped)
     '''
-    print("transaction: ",transactions[3])
-    for recipe_id in similarity_matrix[3]:
-        recipe = recipes_mapped[recipe_id]
-        recipe.sort()
-        print(recipe)
-    '''
-    # Find keys to transaction without similar recipe
-    #missing_similarity_keys = [key for key, x in similarity_matrix.items() if x == []]
-
-    # Create ned dictionary with only transactions without similar recipe
-    #filtered_transactions = {}
-    #for key in missing_similarity_keys:
-    #	filtered_transactions[key] = transactions[key]
-    #todo ka vi clustre resten uavhenging av oppskrifter?:))
-
-    # Find recipes key with approximate similarity above threshold to all filtered transactions
-    #filtered_similarity_matrix = minhash_lsh(recipes_mapped, filtered_transactions, JACCARDIAN_THRESHOLD/2, PERMUTATIONS)
-
-    #with open('filtered_similarity_matrix.pickle', 'wb') as handle:
-    #	pickle.dump(filtered_similarity_matrix, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-    #with open('filtered_similarity_matrix.pickle', 'rb') as handle:
-    #	filtered_similarity_matrix = pickle.load(handle)
-
-    # Find highest true jaccard similarities for each filtered transaction
-    #filtered_jaccard_similarities = max_jaccard_similarity(filtered_similarity_matrix, transactions, recipes_mapped)
-
-    # Merge dictionaries of true jaccard similarities
-    #jaccard_similarities.update(filtered_jaccard_similarities)
-
-
-    #print("jaccard_similarities: ", jaccard_similarities)
+    jaccard_similarities = max_jaccard_similarity(similarity_matrix, transactions_cleaned, recipes_mapped)
 
     # Add cluster value to transactions
     for transaction_id, data in jaccard_similarities.items():
@@ -137,11 +111,59 @@ if __name__=='__main__':
 
     with open('jaccard_similarities.pickle', 'wb') as handle:
         pickle.dump(jaccard_similarities, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
+    '''
     with open('jaccard_similarities.pickle', 'rb') as handle:
         jaccard_similarities = pickle.load(handle)
 
+
+    #HANDLE TRANSACTIONS WITH NO MATCH
+
+    # Find keys to transaction without similar recipe
+    missing_similarity_keys = [key for key, x in similarity_matrix.items() if x == []]
     '''
+    PRØVER HELLER Å LAGE NY LISTE MED TRANASJONER UTEN MATCH, IKKE DICT. DET ER FORDI VI KLSUTRET ALLE 9800 OPPSKRIVER, MANGE SOM ER KUN 0.
+    # Create new dictionary with only transactions without similar recipe.
+    unmatched_transactions = {}
+    for key in missing_similarity_keys:
+        unmatched_transactions[key] = transactions[key]
+    
+    
+    map_, _ = create_item_map(items)
+
+    # Encode unmatched_transactions into binary vectors
+    binary_shingle_transactions = np.zeros((N_SAMPLES, N_FEATURES), dtype=int)
+    for transaction in unmatched_transactions:
+        for grocery in unmatched_transactions[transaction]:
+            binary_shingle_transactions[transaction][map_[grocery]] = 1
+    '''
+    # LAG NYTT SETT MED TRANSAKSJONER
+    '''
+    map_, _ = create_item_map(items)
+    unmatched_transactions = []
+    for key in missing_similarity_keys:
+        unmatched_transactions.append(transactions[key]) #får nå nye indekser på transaksjoner.
+
+    binary_shingle_transactions = np.zeros((len(unmatched_transactions), N_FEATURES), dtype=int)
+    for trans_id, transaction in enumerate(unmatched_transactions):
+        for grocery in transaction:
+            binary_shingle_transactions[trans_id][map_[grocery]] = 1
+
+    # Returns list with cluster (int) at corresponding index
+    clustering_transaction_results = kmean_clustering(binary_shingle_transactions, K_ARRAY)
+
+    # Save cluster of transactions
+    with open('clustering_transaction_results.pickle', 'wb') as handle:
+        pickle.dump(clustering_transaction_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    # save unmatched_transactions for use in analysis
+    with open('unmatched_transactions.pickle', 'wb') as handle:
+        pickle.dump(unmatched_transactions, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    '''
+    # Get cluster of transactions
+    with open('clustering_transaction_results.pickle', 'rb') as handle:
+        clustering_transaction_results = pickle.load(handle)
+
+
     # Find most similar recipes in every cluster
     customer_clusters = {}
     for k in range(K):
@@ -172,7 +194,7 @@ if __name__=='__main__':
         print("antall recipes in cluster ",k,": ",len(customer_clusters[k].keys()))
 
 
-    '''
+    
     # Delete all recipes below threshold
     copy = customer_clusters
     for k in range(K):
@@ -190,7 +212,7 @@ if __name__=='__main__':
         print("antall recipes in cluster ",k," after trimming: ",len(customer_clusters[k].keys()))
 
     print(customer_clusters)
-    '''
+    
 
 
     def cuisine_summary(cluster_dict, recipes):
@@ -203,7 +225,8 @@ if __name__=='__main__':
     for k in range(K):
         print(k,": ",cuisine_summary(customer_clusters[k],recipes))
 
-
+    
+    
     k_means_cuisines ={}
     for recipe_id, cluster in enumerate(clustering_results):
         cuisine = recipes[recipe_id]["cuisine"]
@@ -227,7 +250,7 @@ if __name__=='__main__':
 
     for k in range(K):
         print(k, ": ", sorted_k_means_cuisines[k])
-
+    '''
 
 
 
